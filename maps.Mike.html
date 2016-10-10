@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <title>Driver Panel</title>
+    <style>
+      #right-panel {
+        font-family: 'Roboto','sans-serif';
+        line-height: 30px;
+        padding-left: 10px;
+      }
+
+      #right-panel select, #right-panel input {
+        font-size: 15px;
+      }
+
+      #right-panel select {
+        width: 100%;
+      }
+
+      #right-panel i {
+        font-size: 12px;
+      }
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      #map {
+        height: 100%;
+        float: left;
+        width: 63%;
+        height: 100%;
+      }
+      #right-panel {
+        float: right;
+        width: 34%;
+        height: 100%;
+      }
+      .panel {
+        height: 100%;
+        overflow: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <div id="right-panel">
+      <p>Total Distance: <span id="distance"></span></p>
+      <p>Total Duration: <span id="duration"></span></p>
+    </div>
+    <script>
+    function initMap() {
+        var map = new google.maps.Map(document.getElementById('map'), {
+            zoom: 4,
+            center: {lat: -24.345, lng: 134.46}  // Australia.
+        });
+
+        var directionsService = new google.maps.DirectionsService;
+        var directionsDisplay = new google.maps.DirectionsRenderer({
+            draggable: true,
+            map: map,
+            panel: document.getElementById('right-panel')
+        });
+
+        directionsDisplay.addListener('directions_changed', function() {
+            computeTotalDistance(directionsDisplay.getDirections());
+            console.log("ROUTE CHANGED!!!!!!!!!");
+        });
+
+        //displayRoute('Perth, WA', 'Sydney, NSW', directionsService, directionsDisplay);
+        displayRoute('2 Taylor St, Ashburton, VIC', '303 Collins St, Melbourne, VIC', directionsService, directionsDisplay);
+    }
+
+    function displayRoute(origin, destination, service, display) {
+        service.route({
+            origin: origin,
+            destination: destination,
+            //waypoints: [{location: 'Melbourne, VIC'}, {location: 'Broken Hill, NSW'}],
+            travelMode: 'DRIVING',
+            avoidTolls: true
+        }, function(response, status) {
+            if (status === 'OK') {
+                display.setDirections(response);
+                //console.log(response);
+            } else {
+                alert('Could not display directions due to: ' + status);
+            }
+        });
+    }
+
+    function computeTotalDistance(result) {
+        //console.log(result.routes[0].legs);
+        var distance = 0;
+        var duration = 0;
+        var myroute = result.routes[0];
+        //console.log(myroute);
+        for (var i = 0; i < myroute.legs.length; i++) {
+            distance += myroute.legs[i].distance.value;
+            //console.log(myroute.legs[i].distance.value);
+            duration += myroute.legs[i].duration.value;
+            //console.log(myroute.legs[i].duration.value);
+
+            //console.log(myroute.legs[i]);
+            console.log(myroute.legs[i].steps);
+            steps = myroute.legs[i].steps;
+
+            //303 Collins St
+            //var myPosition = new google.maps.LatLng(-37.816608, 144.963826);
+            //ANZ Gothic Bank
+            var myPosition = new google.maps.LatLng(-37.8161580666029, 144.961673719242);
+            for (var j = 0; j < steps.length; j++) {
+                var locList = google.maps.geometry.encoding.decodePath(steps[j].encoded_lat_lngs);
+                //console.log(locList);
+                var locStr = locList.toString();
+                var latlngStr = locStr.substr(1,locStr.length-2);
+                var latlngStrList = latlngStr.split("),(");
+                console.log(latlngStrList);
+                //console.log(latlngStrList.length);
+                pathPoints = [];
+                for (var k = 0; k < latlngStrList.length; k++) {
+                    var latlng = latlngStrList[k].split(", ");
+                    var lat = parseFloat(latlng[0]);
+                    var lng = parseFloat(latlng[1]);
+                    //var lat = Math.round(parseFloat(latlng[0]) * 100000)/100000;
+                    //var lng = Math.round(parseFloat(latlng[1]) * 100000)/100000;
+                    //console.log("LAT: " + lat + " LON: " + lng);
+                    pathPoints.push(new google.maps.LatLng(lat,lng));
+                }
+                var polyline = new google.maps.Polyline({
+                    path: pathPoints
+                });
+                //console.log(polyline);
+                console.log(google.maps.geometry.poly.isLocationOnEdge(myPosition, polyline, 10e-2));
+            }
+        }
+        distance = distance / 1000;
+        duration = duration / 60;
+        document.getElementById('distance').innerHTML = distance + ' km';
+        document.getElementById('duration').innerHTML = duration + ' min';
+    }
+    </script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBMeIAfBdAbQ6WfBv26oOW8YN2UbtAdmUU&callback=initMap">
+    </script>
+  </body>
+</html>
